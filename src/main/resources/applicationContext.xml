@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+		<!-- 1加载指定资源文件 -->
+		<context:property-placeholder location="classpath:jdbc.properties"/>
+		
+		<!-- 2、配置数据源 -->
+		<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+			<property name="driverClassName" value="${jdbc.driver}"></property>
+			<property name="url" value="${jdbc.url}"></property>
+			<property name="username" value="${jdbc.username}"></property>
+			<property name="password" value="${jdbc.password}"></property>
+		</bean>
+		
+		<!-- 3、配置SQLSessionFactory -->
+		<bean id="sessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+			<property name="dataSource" ref="dataSource"></property>
+			<property name="typeAliasesPackage" value="cn.hl.pojo"></property>
+			<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+		</bean>
+		
+		<!-- 4、配置声明式事务 -->
+		<bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+			<property name="dataSource" ref="dataSource"></property>
+		</bean>
+		
+		<!-- 5、配置通知 -->
+		<tx:advice id="txAdvice" transaction-manager="txManager">
+			<tx:attributes>
+				<tx:method name="load" read-only="true" />
+			</tx:attributes>
+		</tx:advice>
+		
+		<!-- 6、配置切面 -->
+		<aop:config>
+			<aop:pointcut expression="execution(* cn.hl.dao.*.*(..))" id="txPointcut"/>
+			<aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut"/>
+		</aop:config>
+		
+		<!-- 7、配置自动扫描 -->
+		<context:component-scan base-package="cn.hl"></context:component-scan>
+		
+		<!-- 8、扫描mapper映射 -->
+		<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+			<property name="basePackage" value="cn.hl.mapper"></property>
+		</bean>
+</beans>
